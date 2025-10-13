@@ -30,6 +30,28 @@ async function run() {
         const menuCollection = client.db('BistroDB').collection('Menu');
         const reviweCollection = client.db('BistroDB').collection('Reviews');
         const cardCollection = client.db('BistroDB').collection('carts');
+        const userCollection = client.db('BistroDB').collection('users');
+
+        // user related apis
+        app.get('/users',async(req,res)=>{
+            const result = await userCollection.find().toArray();
+            res.send(result);
+        })
+
+
+        app.post('/users',async(req,res)=>{
+            const data = req.body;
+            // we check google user is already in database nki
+            const query ={email: data.email} 
+            const exisitingUser = await userCollection.findOne(query);
+            if(exisitingUser){
+                return res.send({message:'user already exists', insertedId:null})
+            }
+            const result = await userCollection.insertOne(data);
+            res.send(result);
+        })
+
+
 
         app.get('/Menu',async(req,res)=>{
             const result = await menuCollection.find().toArray();
