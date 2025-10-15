@@ -36,30 +36,32 @@ async function run() {
 
         // middleWire
         const verifyToken = (req,res, next)=>{
-            console.log("verifyToken", req.headers);
-            if(!req.headers.authorization){
-                return res.status(401).send({message:"unauthorized access"});
+            // console.log("verifyToken", req.headers);
+            const authHeader = req.headers.authorization;
+            if(!authHeader){
+                return res.status(401).send({message:"unauthorized access no token"});
             }
-            const token = req.headers.authorization.split(' ')[1];
+            const token = authHeader.split(' ')[1];
             jwt.verify(token, process.env.ACCESS_TOKEN,(err,decoded)=>{
                 if(err){
-                  return res.status(401).send({message:'unauthorized access'})
+                  return res.status(401).send({message:'unauthorized access invalid token'});
                 }
                 req.decoded = decoded;
-            })
-            next();
+                next();
+            });
         };
 
+        // middleWire
         const verifyAdmin = async( req,res,next)=>{
             const email = req.decoded.email;
             const query = {email: email};
-            const user =await userCollection.find(query);
+            const user =await userCollection.findOne(query);
             const isAdmin = user?.role === 'admin';
             if(!isAdmin){
-                return res.status(403).send({message:'forbidden access'})
+                return res.status(403).send({message:'forbidden access only admin'});
             }
             next();
-        }
+        };
 
 
         // jwt related apis
@@ -71,7 +73,7 @@ async function run() {
 
 
         // admin related apis
-        app.delete('/users/:id', async (req, res) => {
+        app.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await userCollection.deleteOne(query);
@@ -79,7 +81,7 @@ async function run() {
         });
 
         // admin kina check
-        app.get('/users/admin/:email',verifyToken,verifyAdmin, async(req,res)=>{
+        app.get('/users/admin/:email',verifyToken, async(req,res)=>{
             const email = req.params.email;
             if(email !== req.decoded.email){
                 return res.status(403).send({message:'forbidden access'})
@@ -127,11 +129,16 @@ async function run() {
         })
 
 
-
         app.get('/Menu', async (req, res) => {
             const result = await menuCollection.find().toArray();
             res.send(result)
         });
+
+        app.post('/Menu', verifyToken, verifyAdmin, async(req,res)=>{
+            const item = req.body;
+            const result = await menuCollection.insertOne(item);    
+            res.send(result);
+        })
 
         app.get('/Reviews', async (req, res) => {
             const results = await reviweCollection.find().toArray();
