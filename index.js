@@ -128,7 +128,7 @@ async function run() {
             res.send(result);
         })
 
-
+        // Menu related Apis
         app.get('/Menu', async (req, res) => {
             const result = await menuCollection.find().toArray();
             res.send(result)
@@ -140,9 +140,38 @@ async function run() {
             res.send(result);
         });
 
-        app.delete('/Menu/:id',async(req,res)=>{
-            const id = req.params.id;
+        app.get('/Menu/:id',async(req,res)=>{
+            const id=req.params.id;
             const query = {_id: new ObjectId(id)};
+            const result = await menuCollection.findOne(query);
+            res.send(result)
+        });
+
+        app.patch('/Menu/:id', async(req,res)=>{
+            const item = req.body;
+            const id = req.params.id;
+            const filter = {_id : new ObjectId(id)};
+            const updateDoc ={
+                $set:{
+                    name:item.name,
+                    category: item.category,
+                    price: item.price,
+                    recipe: item.recipe,
+                    image: item.image
+                }
+            }
+            const result = await menuCollection. updateOne(filter,updateDoc);
+            res.send(result)
+        });
+
+        app.delete('/Menu/:id', verifyToken, verifyAdmin, async(req,res)=>{
+            const id = req.params.id;
+            let query ={_id :id};
+            try{
+                const query = {_id: new ObjectId(id)};
+            }catch(error){
+                console.log(error)
+            }
             const result = await menuCollection.deleteOne(query);
             res.send(result)
         });
